@@ -478,7 +478,7 @@ class Service extends Nette\Object
 	 *
 	 * @throws GopayException on failed communication with WS
 	 */
-	private function loadGopayChannels()
+	protected function loadGopayChannels()
 	{
 		if ($this->fetchedChannels) {
 			return;
