@@ -17,7 +17,7 @@ use Markette\Gopay\Api\PaymentMethodElement;
 use Nette;
 use Nette\Application\Responses\RedirectResponse;
 use Nette\DI\Container;
-
+use Nette\Caching\Cache;
 
 
 /**
@@ -32,6 +32,9 @@ use Nette\DI\Container;
  */
 class Service extends Nette\Object
 {
+
+	/* @var string */
+	public static $namespace = 'Gopay-Service';
 
 	/** @const Platba kartou - Česká spořitelna, a.s. E-commerce 3-D Secure */
 	const METHOD_CARD_CESKAS = 'cz_cs_c';
@@ -103,6 +106,9 @@ class Service extends Nette\Object
 	/** @var array */
 	private $deniedChannels = array();
 
+	/** @var Nette\Caching\Cache */
+	private $cache;
+
 	/** @var bool */
 	private $fetchedChannels = FALSE;
 
@@ -120,12 +126,13 @@ class Service extends Nette\Object
 	 * @param string
 	 * @param bool
 	 */
-	public function __construct(GopaySoap $soap, $gopayId, $gopaySecretKey, $testMode)
+	public function __construct(GopaySoap $soap, $gopayId, $gopaySecretKey, $testMode, Nette\Caching\IStorage $cacheStorage)
 	{
 		$this->soap = $soap;
 		$this->setGopayId($gopayId);
 		$this->setGopaySecretKey($gopaySecretKey);
 		$this->setTestMode($testMode);
+		$this->cache = new Nette\Caching\Cache($cacheStorage, self::$namespace);
 	}
 
 
@@ -485,7 +492,13 @@ class Service extends Nette\Object
 		}
 
 		$this->fetchedChannels = TRUE;
-		$methodList = GopaySoap::paymentMethodList();
+
+		$methodList = $this->cache->load('gopay-paymentMethodList');
+		if ($methodList == NULL) {
+			$methodList = GopaySoap::paymentMethodList();
+			$this->cache->save('gopay-paymentMethodList', $methodList, array(Cache::EXPIRE => '+ 4320 minutes'));
+		}
+
 		if ($methodList === NULL) {
 			throw new GopayFatalException('Loading of native Gopay payment channels failed due to communication with WS.');
 		}

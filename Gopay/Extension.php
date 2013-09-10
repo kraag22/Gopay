@@ -37,7 +37,8 @@ class Extension extends CompilerExtension
 				$driver,
 				$config['gopayId'],
 				$config['gopaySecretKey'],
-				isset($config['testMode']) ? $config['testMode'] : FALSE
+				isset($config['testMode']) ? $config['testMode'] : FALSE,
+				'@cacheStorage'
 			));
 
 		if (isset($config['channels'])) {
